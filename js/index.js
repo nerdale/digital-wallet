@@ -25,14 +25,14 @@ const guardarSaldo = (nuevoMonto) => {
 
 // obtiene lista de movimientos (depósitos y envíos) como un arreglo vacío o con datos
 const obtenerHistorial = () => {
-  const datosLocal = localStorage.getItem("historial");
+  const datosLocal = localStorage.getItem("historial")
 
   if (datosLocal === null) {
-    return [];
+    return []
   }
 
-  return JSON.parse(datosLocal);
-};
+  return JSON.parse(datosLocal)
+}
 
 // quita los puntos para evitar errores
 const limpiarPuntos = (texto) => texto.toString().replace(/\./g, "")
@@ -54,9 +54,10 @@ const realizarDeposito = (monto) => {
     guardarSaldo(nuevoSaldo) 
     // registra el depósito en el historial como un "ingreso"
     registrarMovimiento("Depósito realizado", monto, "ingreso")
+    return monto
     alert("¡Depósito realizado con éxito!")
     
-    window.location.href = "menu.html"
+    //window.location.href = "menu.html"
 }
 
 // obtiene saldo inicial, valida contacto y monto de envío, registra saldo final post envío
@@ -124,18 +125,18 @@ $(document).ready(function() {
                         <strong>¡Inicio de sesión realizado con éxito!</strong> Redirigiendo al menú...
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                `);
+                `)
                 
                 setTimeout(() => {
-                    window.location.href = "menu.html";
-                }, 1500);
+                    window.location.href = "menu.html"
+                }, 1500)
             } else {
                 formLogin.before(`
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <strong>Error:</strong> Correo o contraseña incorrectos. Intente nuevamente
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                `);
+                `)
             }
         })
     }
@@ -146,15 +147,36 @@ $(document).ready(function() {
         textoSaldo.innerText = `$${obtenerSaldo().toLocaleString("es-CL")} CLP`
     }
 
+    // muestra saldo actual al cargar la página deposit.html
+    const saldoDeposito = $("#saldoDeposito")
+    if (saldoDeposito.length > 0) {
+        saldoDeposito.text(`$${obtenerSaldo().toLocaleString("es-CL")} CLP`)
+    }
+
     // captura el monto ingresado para hacer depósito y ejecuta la función que realiza el deposito
-    const formDepo = document.getElementById("formularioDeposito")
+    const formDepo = $("#formularioDeposito")
     if (formDepo) {
-        formDepo.addEventListener("submit", function(e) {
+        formDepo.on("submit", function(e) {
             e.preventDefault()
-            const monto = parseInt(limpiarPuntos(document.getElementById("montoIngresado").value))
-            realizarDeposito(monto)
+            const monto = parseInt(limpiarPuntos($("#montoIngresado").val()))
+            const resultadoMonto = realizarDeposito(monto)
+
+            if (resultadoMonto) {
+                $(".confirmacion-deposito").remove()
+                formDepo.after(`
+                    <div class="confirmacion-deposito mt-3 p-3 rounded text-center bg-dark text-white">
+                        <strong>Confirmación:</strong> Has depositado exitosamente $${resultadoMonto.toLocaleString("es-CL")} CLP.
+                    </div>
+                `)
+                
+                $("#montoIngresado").val("")
+                setTimeout(() => {
+                    window.location.href = "menu.html"
+                }, 2000)
+            }
         })
     }
+
 
     // elegir un contacto de la lista para enviar dinero
     let contactoSeleccionado = ""
@@ -206,16 +228,13 @@ $(document).ready(function() {
     }
 
     const mostrarNotificacion = (mensaje) => {
-        const toastElement = document.getElementById('liveToast');
-        const toastBody = document.getElementById('toastMessage');
+        const toastElement = document.getElementById("liveToast")
+        const toastBody = document.getElementById("toastMessage")
 
-        // Cambiamos el texto
-        toastBody.innerText = mensaje;
-
-        // Inicializamos y mostramos el toast usando la librería de Bootstrap
-        const toast = new bootstrap.Toast(toastElement);
-        toast.show();
-    };
+        toastBody.innerText = mensaje
+        const toast = new bootstrap.Toast(toastElement)
+        toast.show()
+    }
 
 // configuración botones redireccionando
 
@@ -224,8 +243,8 @@ $(document).ready(function() {
         btnDepositar.addEventListener("click", () => {
             mostrarNotificacion("redirigiendo a Depositar")
             setTimeout(() => {
-                window.location.href = "deposit.html";
-            }, 1000);
+                window.location.href = "deposit.html"
+            }, 1000)
         })
     }
 
@@ -234,18 +253,18 @@ $(document).ready(function() {
         btnEnviar.addEventListener("click", () => {
             mostrarNotificacion("redirigiendo a Depositar")
             setTimeout(() => {
-                window.location.href = "deposit.html";
-            }, 1000);
+                window.location.href = "deposit.html"
+            }, 1000)
         })
     }
 
     const btnMovimientos = document.getElementById("btnMovimientos")
     if (btnMovimientos) {
         btnMovimientos.addEventListener("click", () => {
-            mostrarNotificacion("redirigiendo a Últimos Movimientos");
+            mostrarNotificacion("redirigiendo a Últimos Movimientos")
             setTimeout(() => {
-                window.location.href = "transactions.html";
-            }, 1000);
+                window.location.href = "transactions.html"
+            }, 1000)
         })
     }
-});
+})
