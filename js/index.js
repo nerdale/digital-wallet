@@ -205,29 +205,47 @@ $(document).ready(function() {
         }
     }
 
+    const mostrarNotificacion = (mensaje) => {
+        const toastElement = document.getElementById('liveToast');
+        const toastBody = document.getElementById('toastMessage');
+
+        // Cambiamos el texto
+        toastBody.innerText = mensaje;
+
+        // Inicializamos y mostramos el toast usando la librería de Bootstrap
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+    };
+
 // configuración botones redireccionando
 
     const btnDepositar = document.getElementById("btnDepositar")
     if (btnDepositar) {
         btnDepositar.addEventListener("click", () => {
-            alert("redirigiendo a Depositar")
-            window.location.href = "deposit.html"
+            mostrarNotificacion("redirigiendo a Depositar")
+            setTimeout(() => {
+                window.location.href = "deposit.html";
+            }, 1000);
         })
     }
 
     const btnEnviar = document.getElementById("btnEnviar")
     if (btnEnviar) {
         btnEnviar.addEventListener("click", () => {
-            alert("redirigiendo a Enviar Dinero")
-            window.location.href = "sendmoney.html"
+            mostrarNotificacion("redirigiendo a Depositar")
+            setTimeout(() => {
+                window.location.href = "deposit.html";
+            }, 1000);
         })
     }
 
     const btnMovimientos = document.getElementById("btnMovimientos")
     if (btnMovimientos) {
         btnMovimientos.addEventListener("click", () => {
-            alert("redirigiendo a Últimos Movimientos")
-            window.location.href = "transactions.html"
+            mostrarNotificacion("redirigiendo a Últimos Movimientos");
+            setTimeout(() => {
+                window.location.href = "transactions.html";
+            }, 1000);
         })
     }
 });
