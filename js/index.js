@@ -7,11 +7,9 @@ const intentarLogin = (email, pass) => {
     const passCorrecta = "123456"
 
     if (email === emailCorrecto && pass === passCorrecta) {
-        alert("¡Inicio de sesión realizado con éxito!")
-        window.location.href = "menu.html"
-    } else {
-        alert("Correo o contraseña incorrectos. Intente nuevamente")
+        return true
     }
+    return false
 }
 /**
  * 2- lectura y guardado de datos -> saldo usuario
@@ -109,16 +107,36 @@ const registrarMovimiento = (detalle, monto, tipo) => {
  * 4- manejo del DOM
  */
 
-document.addEventListener("DOMContentLoaded", function() {
+$(document).ready(function() {
 
     // login: escucha el formulario de inicio de sesión y obtiene datos de los inputs y se lo pasa a la función que valida el login
-    const formLogin = document.getElementById("loginForm")
-    if (formLogin) {
-        formLogin.addEventListener("submit", function(e) {
+    const formLogin = $("#loginForm")
+    if (formLogin.length) { 
+        formLogin.submit(function(e) {
             e.preventDefault()
-            const email = document.getElementById("emailInput").value
-            const pass = document.getElementById("passwordInput").value
-            intentarLogin(email, pass)
+            const email = $("#emailInput").val()
+            const pass = $("#passwordInput").val()
+            const esValido = intentarLogin(email, pass)
+
+            if(esValido === true) {
+                formLogin.before(`
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>¡Inicio de sesión realizado con éxito!</strong> Redirigiendo al menú...
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `);
+                
+                setTimeout(() => {
+                    window.location.href = "menu.html";
+                }, 1500);
+            } else {
+                formLogin.before(`
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Error:</strong> Correo o contraseña incorrectos. Intente nuevamente
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `);
+            }
         })
     }
 
@@ -187,7 +205,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-// configuración botones redireccionando 
+// configuración botones redireccionando
 
     const btnDepositar = document.getElementById("btnDepositar")
     if (btnDepositar) {
@@ -212,4 +230,4 @@ document.addEventListener("DOMContentLoaded", function() {
             window.location.href = "transactions.html"
         })
     }
-})
+});
