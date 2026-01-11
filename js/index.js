@@ -55,9 +55,7 @@ const realizarDeposito = (monto) => {
     // registra el depósito en el historial como un "ingreso"
     registrarMovimiento("Depósito realizado", monto, "ingreso")
     return monto
-    alert("¡Depósito realizado con éxito!")
-    
-    //window.location.href = "menu.html"
+
 }
 
 // obtiene saldo inicial, valida contacto y monto de envío, registra saldo final post envío
@@ -66,15 +64,17 @@ const realizarEnvio = (monto, contacto) => {
 
     if (!contacto) {
         alert("Debe seleccionar un contacto de la lista")
-        return
+        return false
     }
     
     if (isNaN(monto) || monto <= 0) {
-        return alert("Monto no válido") 
+        alert("Monto no válido")
+        return false
     }
 
     if (monto > saldoActual) {
-        return alert("Saldo insuficiente para realizar envío") 
+        alert("Saldo insuficiente para realizar envío")
+        return false
     }
 
     const nuevoSaldo = saldoActual - monto 
@@ -82,9 +82,8 @@ const realizarEnvio = (monto, contacto) => {
     guardarSaldo(nuevoSaldo) 
     // registra el envío en el historial como un "gasto"
     registrarMovimiento(`Envío realizado a ${contacto}`, monto, "gasto")
-    alert("¡Envío realizado con éxito!")
 
-    window.location.href = "menu.html"
+    return true
 }
 
 // creación objeto de la transacción con signo (+/-), color y fecha
@@ -102,6 +101,25 @@ const registrarMovimiento = (detalle, monto, tipo) => {
     historial.unshift(nuevaTransaccion)
     // guarda últimos movimientos localmente con localstorage
     localStorage.setItem("historial", JSON.stringify(historial))
+}
+
+// validación contacto nuevo
+const validarDatosContacto = (nombre, cbu, alias, banco) => {
+    if (nombre === "" || cbu === "" || alias === "" || banco === "") {
+        return false
+    }
+    if (isNaN(cbu) || cbu.length !== 9) {
+        return false
+    }
+    
+    return true
+}
+
+// buscador de contacto
+const matchBusqueda = (elementoLi, palabraClave) => {
+    const textoContacto = elementoLi.textContent.toLowerCase()
+    const busqueda = palabraClave.toLowerCase()
+    return textoContacto.includes(busqueda)
 }
 
 /**
@@ -181,6 +199,7 @@ $(document).ready(function() {
     // elegir un contacto de la lista para enviar dinero
     let contactoSeleccionado = ""
     const lista = document.getElementById("listaContactos")
+    const btnEnviarDinero = document.getElementById("btnEnviarDinero")
     if (lista) {
         lista.addEventListener("click", function(e) {
             const item = e.target.closest(".list-group-item")
@@ -188,19 +207,74 @@ $(document).ready(function() {
                 document.querySelectorAll(".list-group-item").forEach(li => li.classList.remove("bg-light", "border-primary", "border"))
                 item.classList.add("bg-light", "border-primary", "border")
                 contactoSeleccionado = item.querySelector(".fw-bold").innerText
+                if (btnEnviarDinero) {
+                    btnEnviarDinero.classList.remove("d-none")
+                }
             }
         })
     }
 
+    // guardar contacto nuevo que se agrega desde sendmoney
+    const btnGuardarContacto = document.getElementById("btnGuardarContacto")
+    if (btnGuardarContacto) {
+        btnGuardarContacto.addEventListener("click", function () {
+            const nombre = document.getElementById("nombreContacto").value
+            const cbu = document.getElementById("cbuContacto").value
+            const alias = document.getElementById("aliasContacto").value
+            const banco = document.getElementById("bancoContacto").value
+
+            if (validarDatosContacto(nombre, cbu, alias, banco)) {
+                const lista = document.getElementById("listaContactos")
+                const nuevoContacto = `
+                        <li class="list-group-item">
+                            <p class="fw-bold">${nombre}</p>
+                            <p class="d-inline">CBU: ${cbu}</p> <span>|</span>
+                            <p class="d-inline">Alias: ${alias}</p> <span>|</span>
+                            <p class="d-inline">Banco: ${banco}</p>
+                        </li>
+                        `
+                lista.innerHTML += nuevoContacto
+                document.getElementById("formularioNuevoContacto").reset()
+                bootstrap.Modal.getInstance(document.getElementById("modalAgregarContacto")).hide()
+            } else {
+                alert("Datos inválidos: Asegúrese de llenar todos los campos y que el CBU tenga 9 números.")
+            }
+        })
+    }
     // captura el monto y el contacto para hacer el envío
     const btnEnviarFinal = document.getElementById("btnEnviarDinero")
     if (btnEnviarFinal) {
         btnEnviarFinal.addEventListener("click", function() {
             const monto = parseInt(limpiarPuntos(document.getElementById("montoAEnviar").value))
-            realizarEnvio(monto, contactoSeleccionado)
+            const exito = realizarEnvio(monto, contactoSeleccionado)
+            const inputMonto = document.getElementById("montoAEnviar")
+
+            if (exito) {
+                mostrarNotificacion(`¡Envío realizado con éxito!`)
+                inputMonto.value = ""
+                btnEnviarFinal.classList.add("d-none")
+            }
         })
     }
 
+    // match en buscador de contacto
+    const formBusqueda = document.querySelector("form.mb-3")
+    if (formBusqueda) {
+        formBusqueda.addEventListener("submit", function(e) {
+            e.preventDefault()
+            const inputBusqueda = formBusqueda.querySelector('input[placeholder="Buscar contacto"]')
+            const palabraClave = inputBusqueda.value
+            const contactos = document.querySelectorAll("#listaContactos .list-group-item")
+
+            contactos.forEach(contacto => {
+                if (matchBusqueda(contacto, palabraClave)) {
+                    contacto.style.display = "block"
+                } else {
+                    contacto.style.display = "none"
+                }
+            })
+        })
+    }
     // dibuja la lista de últimos movimientos en HTML
     const contenedor = document.getElementById("contenedorMovimientos")
     if (contenedor) {
@@ -251,9 +325,9 @@ $(document).ready(function() {
     const btnEnviar = document.getElementById("btnEnviar")
     if (btnEnviar) {
         btnEnviar.addEventListener("click", () => {
-            mostrarNotificacion("redirigiendo a Depositar")
+            mostrarNotificacion("redirigiendo a Enviar Dinero")
             setTimeout(() => {
-                window.location.href = "deposit.html"
+                window.location.href = "sendmoney.html"
             }, 1000)
         })
     }

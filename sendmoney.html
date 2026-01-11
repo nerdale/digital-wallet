@@ -97,9 +97,21 @@
                 </div>
                 <div class="d-grid">
                     <input type="number" id="montoAEnviar" class="form-control mb-3" placeholder="Monto a enviar">
-                    <button type="submit" id="btnEnviarDinero" class="btn btn-primary mb-3">Enviar dinero</button>
+                    <button type="submit" id="btnEnviarDinero" class="btn btn-primary mb-3 d-none">Enviar dinero</button>
                     <button type="button" class="btn btn-secondary" onclick="window.location.href='menu.html';">Volver a
                         menú principal</button>
+                </div>
+            </div>
+
+            <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+                <div id="liveToast" class="toast align-items-center text-white bg-dark border-0" role="alert"
+                    aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body" id="toastMessage">
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                            aria-label="Close"></button>
+                    </div>
                 </div>
             </div>
     </section>
