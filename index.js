@@ -1,0 +1,215 @@
+/**
+ * 1- validación acceso login.html
+ */
+
+const intentarLogin = (email, pass) => {
+    const emailCorrecto = "alexandra@gmail.com"
+    const passCorrecta = "123456"
+
+    if (email === emailCorrecto && pass === passCorrecta) {
+        alert("¡Inicio de sesión realizado con éxito!")
+        window.location.href = "menu.html"
+    } else {
+        alert("Correo o contraseña incorrectos. Intente nuevamente")
+    }
+}
+/**
+ * 2- lectura y guardado de datos -> saldo usuario
+ */
+
+// obtiene saldo y convierte valor número entero, el saldo por defecto de inicio es 60.000 en caso de no existir localmente un saldo guardado
+const obtenerSaldo = () => parseInt(localStorage.getItem("saldoTotal")) || 60000
+
+// guarda saldo localmente con localstorage
+const guardarSaldo = (nuevoMonto) => {
+    localStorage.setItem("saldoTotal", nuevoMonto.toString())
+}
+
+// obtiene lista de movimientos (depósitos y envíos) como un arreglo vacío o con datos
+const obtenerHistorial = () => {
+  const datosLocal = localStorage.getItem("historial");
+
+  if (datosLocal === null) {
+    return [];
+  }
+
+  return JSON.parse(datosLocal);
+};
+
+// quita los puntos para evitar errores
+const limpiarPuntos = (texto) => texto.toString().replace(/\./g, "")
+
+/**
+ * 3- procesamiento de transacciones
+ */
+
+// calcula el aumento de saldo del depósito, registra movimiento y valida que sea un monto "válido"
+const realizarDeposito = (monto) => {
+
+    if (isNaN(monto) || monto <= 0) {
+        alert("Ingrese un monto válido")
+        return
+    }
+
+    const nuevoSaldo = obtenerSaldo() + monto
+    // nuevo saldo se guarda en memoria local
+    guardarSaldo(nuevoSaldo) 
+    // registra el depósito en el historial como un "ingreso"
+    registrarMovimiento("Depósito realizado", monto, "ingreso")
+    alert("¡Depósito realizado con éxito!")
+    
+    window.location.href = "menu.html"
+}
+
+// obtiene saldo inicial, valida contacto y monto de envío, registra saldo final post envío
+const realizarEnvio = (monto, contacto) => {
+    const saldoActual = obtenerSaldo() 
+
+    if (!contacto) {
+        alert("Debe seleccionar un contacto de la lista")
+        return
+    }
+    
+    if (isNaN(monto) || monto <= 0) {
+        return alert("Monto no válido") 
+    }
+
+    if (monto > saldoActual) {
+        return alert("Saldo insuficiente para realizar envío") 
+    }
+
+    const nuevoSaldo = saldoActual - monto 
+    // nuevo saldo se guarda en memoria local
+    guardarSaldo(nuevoSaldo) 
+    // registra el envío en el historial como un "gasto"
+    registrarMovimiento(`Envío realizado a ${contacto}`, monto, "gasto")
+    alert("¡Envío realizado con éxito!")
+
+    window.location.href = "menu.html"
+}
+
+// creación objeto de la transacción con signo (+/-), color y fecha
+const registrarMovimiento = (detalle, monto, tipo) => {
+    const historial = obtenerHistorial()
+    
+    // estructura de datos para últimos movimientos con formato peso chileno y color según es envío o depósito
+    const nuevaTransaccion = {
+        detalle: detalle,
+        monto: `${tipo === "gasto" ? "-" : "+"}$${monto.toLocaleString("es-CL")}`,
+        clase: tipo === "gasto" ? "text-danger" : "text-success",
+        fecha: new Date().toLocaleString("es-CL")
+    }
+    // objeto queda de los primeros en la lista
+    historial.unshift(nuevaTransaccion)
+    // guarda últimos movimientos localmente con localstorage
+    localStorage.setItem("historial", JSON.stringify(historial))
+}
+
+/**
+ * 4- manejo del DOM
+ */
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    // login: escucha el formulario de inicio de sesión y obtiene datos de los inputs y se lo pasa a la función que valida el login
+    const formLogin = document.getElementById("loginForm")
+    if (formLogin) {
+        formLogin.addEventListener("submit", function(e) {
+            e.preventDefault()
+            const email = document.getElementById("emailInput").value
+            const pass = document.getElementById("passwordInput").value
+            intentarLogin(email, pass)
+        })
+    }
+
+    // muestra saldo actual al cargar la página menu.html
+    const textoSaldo = document.getElementById("saldoMostrado")
+    if (textoSaldo) {
+        textoSaldo.innerText = `$${obtenerSaldo().toLocaleString("es-CL")} CLP`
+    }
+
+    // captura el monto ingresado para hacer depósito y ejecuta la función que realiza el deposito
+    const formDepo = document.getElementById("formularioDeposito")
+    if (formDepo) {
+        formDepo.addEventListener("submit", function(e) {
+            e.preventDefault()
+            const monto = parseInt(limpiarPuntos(document.getElementById("montoIngresado").value))
+            realizarDeposito(monto)
+        })
+    }
+
+    // elegir un contacto de la lista para enviar dinero
+    let contactoSeleccionado = ""
+    const lista = document.getElementById("listaContactos")
+    if (lista) {
+        lista.addEventListener("click", function(e) {
+            const item = e.target.closest(".list-group-item")
+            if (item) {
+                document.querySelectorAll(".list-group-item").forEach(li => li.classList.remove("bg-light", "border-primary", "border"))
+                item.classList.add("bg-light", "border-primary", "border")
+                contactoSeleccionado = item.querySelector(".fw-bold").innerText
+            }
+        })
+    }
+
+    // captura el monto y el contacto para hacer el envío
+    const btnEnviarFinal = document.getElementById("btnEnviarDinero")
+    if (btnEnviarFinal) {
+        btnEnviarFinal.addEventListener("click", function() {
+            const monto = parseInt(limpiarPuntos(document.getElementById("montoAEnviar").value))
+            realizarEnvio(monto, contactoSeleccionado)
+        })
+    }
+
+    // dibuja la lista de últimos movimientos en HTML
+    const contenedor = document.getElementById("contenedorMovimientos")
+    if (contenedor) {
+        const historial = obtenerHistorial()
+        if (historial.length === 0) {
+            contenedor.innerHTML = '<li class="list-group-item text-center">No hay movimientos registrados</li>'
+        } else {
+            let htmlFinal = ""
+            historial.forEach(item => {
+                htmlFinal += `
+                    <li class="list-group-item">
+                        <div class="row align-items-center">
+                            <div class="col-8">
+                                <div class="fw-bold">${item.detalle}</div>
+                                <small class="text-muted">${item.fecha}</small>
+                            </div>
+                            <div class="col-4 text-end">
+                                <span class="${item.clase} fw-bold">${item.monto}</span>
+                            </div>
+                        </div>
+                    </li>`
+            })
+            contenedor.innerHTML = htmlFinal
+        }
+    }
+
+// configuración botones redireccionando 
+
+    const btnDepositar = document.getElementById("btnDepositar")
+    if (btnDepositar) {
+        btnDepositar.addEventListener("click", () => {
+            alert("redirigiendo a Depositar")
+            window.location.href = "deposit.html"
+        })
+    }
+
+    const btnEnviar = document.getElementById("btnEnviar")
+    if (btnEnviar) {
+        btnEnviar.addEventListener("click", () => {
+            alert("redirigiendo a Enviar Dinero")
+            window.location.href = "sendmoney.html"
+        })
+    }
+
+    const btnMovimientos = document.getElementById("btnMovimientos")
+    if (btnMovimientos) {
+        btnMovimientos.addEventListener("click", () => {
+            alert("redirigiendo a Últimos Movimientos")
+            window.location.href = "transactions.html"
+        })
+    }
+})
