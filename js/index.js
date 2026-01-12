@@ -122,6 +122,30 @@ const matchBusqueda = (elementoLi, palabraClave) => {
     return textoContacto.includes(busqueda)
 }
 
+// obtiene el tipo de transaccion
+const getTipoTransaccion = (tipo) => {
+    if (tipo === "gasto") {
+        return "Envío / Compra"
+    } else {
+        return "Depósito / Transferencia"
+    }
+}
+
+// filtrar historial por tipo de movimiento/transaccion
+const filtrarHistorial = (historial, filtro) => {
+    if (filtro === "todos") {
+        return historial
+    }
+    
+    return historial.filter(montoMovimiento => {
+        if (filtro === "gasto") {
+            return montoMovimiento.clase === "text-danger"
+        } else {
+            return montoMovimiento.clase === "text-success"
+        }
+    })
+}
+
 /**
  * 4- manejo del DOM
  */
@@ -275,30 +299,59 @@ $(document).ready(function() {
             })
         })
     }
-    // dibuja la lista de últimos movimientos en HTML
-    const contenedor = document.getElementById("contenedorMovimientos")
-    if (contenedor) {
-        const historial = obtenerHistorial()
-        if (historial.length === 0) {
-            contenedor.innerHTML = '<li class="list-group-item text-center">No hay movimientos registrados</li>'
-        } else {
-            let htmlFinal = ""
-            historial.forEach(item => {
-                htmlFinal += `
-                    <li class="list-group-item">
-                        <div class="row align-items-center">
-                            <div class="col-8">
-                                <div class="fw-bold">${item.detalle}</div>
-                                <small class="text-muted">${item.fecha}</small>
+
+
+// --- MANEJO DEL DOM (SECCIÓN 4) ---
+
+    const renderizarListaMovimientos = (filtro) => {
+        const contenedor = document.getElementById("contenedorMovimientos")
+       
+        if (contenedor) {
+            const historialCompleto = obtenerHistorial()
+            const historialFiltrado = filtrarHistorial(historialCompleto, filtro)
+
+            if (historialFiltrado.length === 0) {
+                contenedor.innerHTML = '<li class="list-group-item text-center">No hay movimientos registrados</li>'
+            } else {
+                let htmlFinal = ""
+
+                historialFiltrado.forEach(item => {
+                    let tipoOriginal = ""
+                    if (item.clase === "text-danger") {
+                        tipoOriginal = "gasto"
+                    } else {
+                        tipoOriginal = "ingreso"
+                    }
+                    
+                    const tipoLegible = getTipoTransaccion(tipoOriginal)
+
+                    htmlFinal += `
+                        <li class="list-group-item">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <div class="fw-bold">${item.detalle}</div>
+                                    <small class="text-muted">${tipoLegible} - ${item.fecha}</small>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <span class="${item.clase} fw-bold">${item.monto}</span>
+                                </div>
                             </div>
-                            <div class="col-4 text-end">
-                                <span class="${item.clase} fw-bold">${item.monto}</span>
-                            </div>
-                        </div>
-                    </li>`
-            })
-            contenedor.innerHTML = htmlFinal
+                        </li>`
+                })
+                contenedor.innerHTML = htmlFinal
+            }
         }
+    }
+
+    // filtro con jquery
+    const filtroSelect = $("#filtroTipo")
+    if (filtroSelect.length > 0) {
+        renderizarListaMovimientos("todos") 
+
+        filtroSelect.on("change", function() {
+            const valor = $(this).val()
+            renderizarListaMovimientos(valor) 
+        })
     }
 
     const mostrarNotificacion = (mensaje) => {
