@@ -4,34 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet Digital - Login</title>
+    <title>Wallet Digital - Menú</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    
+
     <section class="container">
-        <div class="row justify-content-center">
+        <div class="row justify-content-center text-center">
             <div class="col-12 col-md-8 col-lg-6">
-                <h2>Inicio de sesión</h2>
-                <form id="loginForm">
-                    <div>
-                        <label class="form-label">Email:</label>
-                        <input type="email" id="emailInput" class="form-control" placeholder="usuario@correo.com">
-                    </div>
-                    <div>
-                        <label class="form-label">Password:</label>
-                        <input type="password" id="passwordInput" class="form-control mb-3" placeholder="********">
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" id="btnLogin" class="btn btn-primary">Iniciar Sesión</button>
-                    </div>
-                </form>
+                <h1 class="display-5 fw-bold mt-5 mb-5">Wallet Digital</h1>
+        
+                <div class="d-grid gap-3">
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='views/login.html';">Iniciar Sesión</button>
+                    <button type="button" class="btn btn-outline-secondary">Registrarse</button>
+                </div>
             </div>
         </div>
     </section>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
