@@ -11,6 +11,9 @@ const intentarLogin = (email, pass) => {
     }
     return false
 }
+
+/*----------------------------------------------*/
+
 /**
  * 2- lectura y guardado de datos -> saldo usuario
  */
@@ -37,6 +40,8 @@ const obtenerHistorial = () => {
 // quita los puntos para evitar errores
 const limpiarPuntos = (texto) => texto.toString().replace(/\./g, "")
 
+/*----------------------------------------------*/
+
 /**
  * 3- procesamiento de transacciones
  */
@@ -46,7 +51,7 @@ const realizarDeposito = (monto) => {
 
     if (isNaN(monto) || monto <= 0) {
         alert("Ingrese un monto válido")
-        return
+        return false
     }
 
     const nuevoSaldo = obtenerSaldo() + monto
@@ -56,6 +61,27 @@ const realizarDeposito = (monto) => {
     registrarMovimiento("Depósito realizado", monto, "ingreso")
     return monto
 
+}
+
+// retiro de fondos
+const realizarRetiro = (monto) => {
+    const saldoActual = obtenerSaldo()
+
+    if (isNaN(monto) || monto <= 0) {
+        alert("Ingrese un monto válido")
+        return false
+    }
+
+    if (monto > saldoActual) {
+        alert("No tiene fondos suficientes para retirar")
+        return false
+    }
+
+    const nuevoSaldo = saldoActual - monto
+    guardarSaldo(nuevoSaldo)
+    registrarMovimiento("Retiro realizado", monto, "gasto")
+
+    return true
 }
 
 // obtiene saldo inicial, valida contacto y monto de envío, registra saldo final post envío
@@ -125,7 +151,7 @@ const matchBusqueda = (elementoLi, palabraClave) => {
 // obtiene el tipo de transaccion
 const getTipoTransaccion = (tipo) => {
     if (tipo === "gasto") {
-        return "Envío / Compra"
+        return "Envío / Compra / Retiro"
     } else {
         return "Depósito / Transferencia"
     }
@@ -146,15 +172,23 @@ const filtrarHistorial = (historial, filtro) => {
     })
 }
 
+/*----------------------------------------------*/
+
 /**
  * 4- manejo del DOM
  */
 
 $(document).ready(function() {
 
-    // login: escucha el formulario de inicio de sesión y obtiene datos de los inputs y se lo pasa a la función que valida el login
+    const animarSaldo = (selector) => {
+        $(selector)
+            .animate({fontSize: "2.5rem", opacity: 0.5 }, 500)
+            .animate({fontSize: "2rem", opacity: 1 }, 500)
+    }
+
+    /* LOGIN */
     const formLogin = $("#loginForm")
-    if (formLogin.length) { 
+    if (formLogin) { 
         formLogin.submit(function(e) {
             e.preventDefault()
             const email = $("#emailInput").val()
@@ -183,17 +217,29 @@ $(document).ready(function() {
         })
     }
 
+    /* VISUALIZACION SALDO */
+
     // muestra saldo actual al cargar la página menu.html
-    const textoSaldo = document.getElementById("saldoMostrado")
+    const textoSaldo = $("#saldoMostrado")
     if (textoSaldo) {
-        textoSaldo.innerText = `$${obtenerSaldo().toLocaleString("es-CL")} CLP`
+        textoSaldo.text(`$${obtenerSaldo().toLocaleString("es-CL")} CLP`)
+        animarSaldo("#saldoMostrado")
     }
 
     // muestra saldo actual al cargar la página deposit.html
     const saldoDeposito = $("#saldoDeposito")
-    if (saldoDeposito.length > 0) {
+    if (saldoDeposito) {
         saldoDeposito.text(`$${obtenerSaldo().toLocaleString("es-CL")} CLP`)
+        
     }
+
+    // muestra saldo inicial al cargar la página withdraw.html (retiro de fondos)
+    const saldoRetiro = $("#saldoRetiro")
+    if (saldoRetiro) {
+        saldoRetiro.text(`$${obtenerSaldo().toLocaleString("es-CL")} CLP`)
+    }
+
+    /* DEPOSITO DE DINERO */
 
     // captura el monto ingresado para hacer depósito y ejecuta la función que realiza el deposito
     const formDepo = $("#formularioDeposito")
@@ -215,10 +261,35 @@ $(document).ready(function() {
                 setTimeout(() => {
                     window.location.href = "menu.html"
                 }, 2000)
+            } else {
+                console.error("Operación fallida")
             }
         })
     }
 
+    /* RETIRO DE FONDOS */
+
+    // formulario retiro de fondos
+    const formRetiro = document.getElementById("formularioRetiro")
+    if (formRetiro) {
+        formRetiro.addEventListener("submit", function (e) {
+            e.preventDefault()
+
+            const inputMonto = document.getElementById("montoARetirar")
+            const monto = parseInt(limpiarPuntos(inputMonto.value || "0"))
+
+            if (realizarRetiro(monto)) {
+                const nuevoSaldo = obtenerSaldo()
+                saldoRetiro.text(`$${nuevoSaldo.toLocaleString("es-CL")}`)
+                mostrarNotificacion("Retiro realizado con éxito")
+                inputMonto.value = ""
+            } else {
+                console.error("Operación fallida")
+            }
+        })
+    }
+
+    /* ENVIO DE DINERO */
 
     // elegir un contacto de la lista para enviar dinero
     let contactoSeleccionado = ""
@@ -238,7 +309,7 @@ $(document).ready(function() {
         })
     }
 
-    // guardar contacto nuevo que se agrega desde sendmoney
+    // guardar contacto nuevo que se agrega desde sendmoney.html
     const btnGuardarContacto = document.getElementById("btnGuardarContacto")
     if (btnGuardarContacto) {
         btnGuardarContacto.addEventListener("click", function () {
@@ -265,6 +336,7 @@ $(document).ready(function() {
             }
         })
     }
+
     // captura el monto y el contacto para hacer el envío
     const btnEnviarFinal = document.getElementById("btnEnviarDinero")
     if (btnEnviarFinal) {
@@ -300,9 +372,32 @@ $(document).ready(function() {
         })
     }
 
+    // autocompletado buscador contactos
+    $(document).on("keyup", "#buscarContacto", function() {
+        const valorBusqueda = $(this).val().toLowerCase()
+        
+        $("#listaContactos .list-group-item").each(function() {
+            const nombreContacto = $(this).text().toLowerCase()
+            
+            if (nombreContacto.includes(valorBusqueda) && valorBusqueda !== "") {
+                $(this).addClass("bg-light").show()
+            } else if (valorBusqueda === "") {
+                $(this).removeClass("bg-light").show()
+            } else {
+                $(this).hide()
+            }
+        })
+    })
 
-// --- MANEJO DEL DOM (SECCIÓN 4) ---
+    $(document).on("click", "#listaContactos .list-group-item", function() {
+        const nombreSeleccionado = $(this).text().trim()   
+        $("#buscarContacto").val(nombreSeleccionado)
+        $("#btnEnviarDinero").removeClass("d-none")
+    })
 
+    /* ULTIMOS MOVIMIENTOS */
+
+    // dibujar historial movimientos
     const renderizarListaMovimientos = (filtro) => {
         const contenedor = document.getElementById("contenedorMovimientos")
        
@@ -343,7 +438,7 @@ $(document).ready(function() {
         }
     }
 
-    // filtro con jquery
+    // filtro con jquery en ultimos movimientos
     const filtroSelect = $("#filtroTipo")
     if (filtroSelect.length > 0) {
         renderizarListaMovimientos("todos") 
@@ -354,6 +449,9 @@ $(document).ready(function() {
         })
     }
 
+    /* NOTIFICACIONES TOAST BOOTSTRAP */
+
+    // notificaciones con toast de bootstrap
     const mostrarNotificacion = (mensaje) => {
         const toastElement = document.getElementById("liveToast")
         const toastBody = document.getElementById("toastMessage")
@@ -363,8 +461,9 @@ $(document).ready(function() {
         toast.show()
     }
 
-// configuración botones redireccionando
+    /* BOTONES DEPOSITAR, ENVIAR DINERO, RETIRAR FONDOS, ULTIMOS MOVIMIENTOS */
 
+    // configuración botones redireccionando
     const btnDepositar = document.getElementById("btnDepositar")
     if (btnDepositar) {
         btnDepositar.addEventListener("click", () => {
@@ -382,6 +481,16 @@ $(document).ready(function() {
             setTimeout(() => {
                 window.location.href = "sendmoney.html"
             }, 1000)
+        })
+    }
+
+    const btnRetirarFondos = document.getElementById("btnRetirar")
+    if (btnRetirarFondos) {
+        btnRetirarFondos.addEventListener("click", () => {
+            mostrarNotificacion("redirigiendo a Retiro de fondos")
+            setTimeout(() => {
+                window.location.href = "withdraw.html"
+            }, 1000)    
         })
     }
 
